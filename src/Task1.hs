@@ -35,6 +35,10 @@ instance {-# INCOHERENT #-} Measured m a => Measured m [a] where
 data Min a = PosInf | Min a
   deriving (Show, Eq)
 
+getMin :: Min a -> Maybe a
+getMin (Min x) = Just x
+getMin PosInf = Nothing
+
 instance Ord a => Semigroup (Min a) where
   PosInf <> y = y
   x <> PosInf = x
@@ -61,6 +65,10 @@ instance Ord a => Measured (Min a) a where
 --
 data Max a = NegInf | Max a
   deriving (Show, Eq)
+
+getMax :: Max a -> Maybe a
+getMax NegInf = Nothing
+getMax (Max x) = Just x
 
 instance Ord a => Semigroup (Max a) where
   NegInf <> y = y
