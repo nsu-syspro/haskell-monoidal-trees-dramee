@@ -33,19 +33,18 @@ instance PriorityQueue PQueue where
     Leaf e -> [getEntry e]
     Branch _ l r -> entries (PQueue l) ++ entries (PQueue r)
   insert k v pq = PQueue (insert' (Entry (k, v)) (getTree pq)) where
+    getKey = fst . getEntry
     insert' :: Ord k => Entry k v -> Tree (MinMax k) (Entry k v) -> Tree (MinMax k) (Entry k v)
     insert' e Empty = leaf e
     insert' e (Leaf e')
       | getKey e <= getKey e'   = branch (leaf e) (leaf e')
       | otherwise    = branch (leaf e') (leaf e) 
-      where 
-        getKey = fst . getEntry
     insert' e (Branch m l r)
       | getKey e < fromJust (getMin (fst (getMinMax m))) = branch (insert' e l) r
       | getKey e > fromJust (getMax (snd (getMinMax m))) = branch l (insert' e r)
       | otherwise = branch (insert' e l) r
-      where 
-        getKey = fst . getEntry 
+      
+         
 
   extractMin pq = case getTree pq of
     Empty -> Nothing
