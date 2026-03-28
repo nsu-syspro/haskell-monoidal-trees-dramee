@@ -45,5 +45,5 @@ branch l r = Branch (measure l <> measure r) l r
 instance MonoidalTree Tree where
   toTree :: (Foldable f, Measured m a) => f a -> Tree m a
   toTree = foldl' (|>) Empty
-  (<|) a  = branch (leaf a) 
+  (<|)   = branch . leaf
   (|>) tree a = branch tree (leaf a)

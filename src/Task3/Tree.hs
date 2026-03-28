@@ -49,29 +49,59 @@ data InsertResult m a
   = Inserted (Tree m a)
   | Split (Tree m a) (Tree m a)
 
+data Direction = GoLeft | GoRight
+  
+isTerminal :: Tree m a -> Bool
+isTerminal Empty = True
+isTerminal (Leaf _) = True
+isTerminal (Node2 _ l r) = case (l, r) of
+  (Leaf _, Leaf _) -> True
+  _ -> False
+isTerminal (Node3 _ l m r) = case (l, m, r) of
+  (Leaf _, Leaf _, Leaf _) -> True
+  _ -> False
+
+
+insertDir :: Measured m a => Direction -> a -> Tree m a -> InsertResult m a
+insertDir _ a' Empty = Inserted (Leaf a')
+insertDir dir a' (Leaf x) =
+  case dir of
+    GoLeft  -> Inserted (node2 (leaf a') (leaf x))
+    GoRight -> Inserted (node2 (leaf x) (leaf a'))
+insertDir dir a' node@(Node2 _ l r) =
+  if isTerminal node then
+    case dir of
+    GoLeft  -> Inserted (node3 (leaf a') l r)
+    GoRight -> Inserted (node3 l r (leaf a'))
+  else
+    case dir of
+      GoLeft -> case insertDir dir a' l of 
+        Inserted newL -> Inserted (node2 newL r)
+        Split newL newM -> Inserted (node3 newL newM r)
+      GoRight -> case insertDir dir a' r of
+        Inserted newR -> Inserted (node2 l newR)
+        Split newM newR -> Inserted (node3 l newM newR)
+insertDir dir a' node@(Node3 _ l m r) =
+  if isTerminal node then
+    case dir of
+    GoLeft  -> Split (node2 (leaf a') l) (node2 m r)
+    GoRight -> Split (node2 l m) (node2 r (leaf a'))
+  else
+    case dir of
+      GoLeft -> case insertDir dir a' l of 
+        Inserted newL -> Inserted (node3 newL m r)
+        Split newL newM -> Split (node2 newL newM) (node2 m r)
+      GoRight -> case insertDir dir a' r of
+        Inserted newR -> Inserted (node3 l m newR)
+        Split newM newR -> Split (node2 l m) (node2 newM newR)
+
 instance MonoidalTree Tree where
   toTree = foldl' (|>) Empty
-  (<|) a tree = case insert a tree of
+  (<|) a tree = case insertDir GoLeft a tree of
     Inserted newTree -> newTree
     Split left right -> node2 left right 
-    where
-      insert :: Measured m a => a -> Tree m a -> InsertResult m a
-      insert a' Empty = Inserted (Leaf a')
-      insert a' (Leaf x) = Inserted (node2 (leaf a') (leaf x))
-      insert a' (Node2 _ l r) = Inserted (node3 (leaf a') l r)
-      insert a' (Node3 _ l m r) = case insert a' l of
-        Inserted newL -> Inserted (node3 newL m r)
-        Split newL newM -> Inserted (node2 newL (node3 newM m r))
-  (|>) a tree = case insert a tree of
+  
+  (|>) a tree = case insertDir GoRight tree a of
     Inserted newTree -> newTree
-    Split left right -> node2 left right 
-    where
-      insert :: Measured m a => Tree m a -> a -> InsertResult m a
-      insert Empty a' = Inserted (Leaf a')
-      insert (Leaf x) a' = Inserted (node2 (leaf x) (leaf a'))
-      insert (Node2 _ l r) a' = Inserted (node3  l r (leaf a'))
-      insert (Node3 _ l m r) a' = case insert r a' of
-        Inserted newR -> Inserted (node3 l m newR)
-        Split newM newR -> Inserted (node2  (node3 l m newM) newR)
-
+    Split left right -> node2 left right
 
