@@ -131,3 +131,6 @@ instance Monoid (Size a) where
 
 instance Measured (Size a) a where
   measure = Size . const 1
+
+instance Ord (Size a) where
+  compare x y = compare (getSize x) (getSize y)

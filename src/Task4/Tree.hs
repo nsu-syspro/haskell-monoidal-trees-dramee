@@ -199,9 +199,12 @@ splitTree f acc (Deep _ pr m sf)
  
 -- | Splits tree based on given predicate
 split :: Measured m a => (m -> Bool) -> Tree m a -> (Tree m a, Tree m a)
-split f tree  = case splitTree f mempty tree of
-  Just (Split l x r) -> (l, x <| r)
-  Nothing -> (tree, Empty)
+split _ Empty = (Empty, Empty)
+split f xs  = 
+  if f (measure xs) then case splitTree f mempty xs of
+    Just (Split l x r) -> (l, x <| r)
+    Nothing -> error "Invalid state: splitTree should not return Nothing when predicate is satisfied"
+  else (xs, Empty)
 
 app3 :: Measured m a => Tree m a -> [a] -> Tree m a -> Tree m a
 app3 Empty ts xs = foldr (<|) xs ts
